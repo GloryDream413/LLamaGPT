@@ -14,11 +14,9 @@ async function createPrediction (text) {
   const response = await axios.post(
     'https://api.replicate.com/v1/predictions',
     {
-      // Pinned to a specific version of Stable Diffusion
-      // See https://replicate.com/stability-ai/stable-diffussion/versions
       version:
-        '601eea49d49003e6ea75a11527209c4f510a93e2112c969d548fbb45b9c4f19f', //stable-diffussion
-      input: { prompt: text + ', 4k photo'}
+        '2014ee1247354f2e81c0b3650d71ca715bc1e610189855f134c30ecb841fae21', //LLama Model
+      input: { prompt: text, top_p : 0.95, max_length : 500, temperature : 0.8, repetition_penalty : 1 }
     },
     {
       headers: {
@@ -29,6 +27,7 @@ async function createPrediction (text) {
   )
 
   const prediction = response.data
+  console.log("RESULT : ", prediction);
   return prediction
 }
 
@@ -44,7 +43,6 @@ async function getPredictionStatus (id) {
   )
 
   const prediction = response.data
-  console.log(response)
   return prediction
 }
 
@@ -94,14 +92,11 @@ bot.onText(/\/imagine (.+)/, async (msg, match) => {
     }
   }
 
-  // Update the last message time for this user
   userMessageTime.set(chatId, now)
   bot.sendMessage(
-    chatId, "Generating Image for @" + username
+    chatId, "Generating ... for @" + username
   )
-  //"Generating Image for @" + username
-  //"I hope to discuss in telegram with you. My telegram id is GloryDream413."
-  // const image = await generateImage(match[1]);
+  
   const prediction = await createPrediction(match[1])
   let response = null
   let nCount = 0;
@@ -118,11 +113,12 @@ bot.onText(/\/imagine (.+)/, async (msg, match) => {
     }
   }
   if (response.output) {
-    bot.sendPhoto(chatId, response.output[response.output.length - 1], {
-      caption: 'Generated for @' + username + ': ' + match[1],
-      reply_to_message_id: msg.message_id
-    })
-    console.log('Generated for @' + username)
+    let result = '';
+    for(let i=0;i<response.output.length;i++)
+    {
+      result += response.output[i];
+    }
+    bot.sendMessage(chatId, result);
   } else {
     bot.sendMessage(chatId, 'Sorry. could you again please.');
   }
